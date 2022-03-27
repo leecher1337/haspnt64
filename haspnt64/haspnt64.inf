@@ -1,0 +1,70 @@
+;
+; HaspNt64.inf
+;
+
+[Version]
+Signature="$WINDOWS NT$"
+Class=System
+ClassGuid={4d36e97d-e325-11ce-bfc1-08002be10318}
+Provider=%ManufacturerName%
+DriverVer=0.0.0.1
+CatalogFile=HaspNt64.cat
+
+;-------------------------------------------------------------------------
+; Installation Section
+;-------------------------------------------------------------------------
+[DefaultInstall.NT$ARCH$]
+ CopyFiles       = HaspNt.CopyFiles.Sys, HaspNt.CopyFiles.Vdd
+
+[DefaultUninstall.NT$ARCH$]
+ DelFiles        = HaspNt.CopyFiles.Sys, HaspNt.CopyFiles.Vdd
+ LegacyUninstall=1
+
+
+; ------------------------------------------------------------------------
+; File copy
+; ------------------------------------------------------------------------
+[DestinationDirs]
+DefaultDestDir = 12
+HaspNt.CopyFiles.Sys   = 12   ; %windir%\System32\drivers
+HaspNt.CopyFiles.Vdd = 16425  ; %windir%\SysWOW64
+
+[HaspNt.CopyFiles.Sys]
+HaspNt64.sys
+
+[HaspNt.CopyFiles.Vdd]
+haspdos.sys
+haspvdd.dll
+
+[SourceDisksNames]
+1 = %DiskName%,,,""
+
+[SourceDisksFiles]
+HaspNt64.sys = 1
+haspdos.sys = 1
+haspvdd.dll = 1
+
+;-------------------------------------------------------------------------
+; Service installation support
+;-------------------------------------------------------------------------
+[DefaultInstall.NT$ARCH$.Services]
+ AddService=HaspNt,0,HaspNt.Service
+
+[DefaultUninstall.NT$ARCH$.Services]
+ DelService=HaspNt,0x200
+
+[HaspNt.Service]
+ DisplayName     = %HaspNt_Desc%
+ ServiceType     = 1 ;SERVICE_KERNEL_DRIVER
+ StartType       = 2 ;SERVICE_AUTO_START
+ ErrorControl    = 1 ;SERVICE_ERROR_NORMAL
+ ServiceBinary   = %12%\HaspNt64.sys
+ Description     = %HaspNt_Desc%
+ Dependencies    = hardlock
+
+
+[Strings]
+ManufacturerName="leecher1337"
+ClassName=""
+DiskName="HaspNt64 Source Disk"
+HaspNt_Desc="HASP Kernel Device Driver for Windows NT"

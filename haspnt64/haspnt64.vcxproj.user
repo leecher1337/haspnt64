@@ -1,0 +1,29 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
+    <TestCertificate>CN="WDKTestCert leecher,132916110009121477" | 64618FCA118586B43900035B3B54ACBE00A11DF3</TestCertificate>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release-signed|ARM'">
+    <TestCertificate>CN="WDKTestCert leecher,132916110009121477" | 64618FCA118586B43900035B3B54ACBE00A11DF3</TestCertificate>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
+    <TestCertificate>CN="WDKTestCert leecher,132916110009121477" | 64618FCA118586B43900035B3B54ACBE00A11DF3</TestCertificate>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release-signed|ARM64'">
+    <TestCertificate>CN="WDKTestCert leecher,132916110009121477" | 64618FCA118586B43900035B3B54ACBE00A11DF3</TestCertificate>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <TestCertificate>CN="WDKTestCert leecher,132916110009121477" | 64618FCA118586B43900035B3B54ACBE00A11DF3</TestCertificate>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release-signed|Win32'">
+    <TestCertificate>CN="WDKTestCert leecher,132916110009121477" | 64618FCA118586B43900035B3B54ACBE00A11DF3</TestCertificate>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <TestCertificate>CN="WDKTestCert leecher,132916110009121477" | 64618FCA118586B43900035B3B54ACBE00A11DF3</TestCertificate>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release-signed|x64'">
+    <TestCertificate>CN="WDKTestCert leecher,132916110009121477" | 64618FCA118586B43900035B3B54ACBE00A11DF3</TestCertificate>
+    <SignMode>ProductionSign</SignMode>
+    <ProductionCertificate>CN=NVIDIA Corporation, O=NVIDIA Corporation, L=SANTA CLARA, S=California, C=US | 30632EA310114105969D0BDA28FDCE267104754F</ProductionCertificate>
+  </PropertyGroup>
+</Project>
