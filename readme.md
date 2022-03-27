@@ -139,7 +139,7 @@ For a documented disassembly of the DOS HASP code, see the IDA DB of
 
 Here is a table of some basic DOS HASP functions:
 
-
+```
 +--------------------+--------------------+----------------------------------+
 |       SERVICE      |       CALL         |             RETURN               |
 |  BH=FUNC,  BL=PORT |                    |                                  |
@@ -183,6 +183,7 @@ Here is a table of some basic DOS HASP functions:
 |                    |  ES=BUFER SEG.     |                                  |
 |                    |  AX=BUFER OFFS.    |                                  |
 +--------------------+--------------------+----------------------------------+
+```
 
 ### The HASPDOS.SYS DOS device driver 
 
@@ -427,23 +428,27 @@ calls to the underlying dongle. For this, just replace the original
 HASPVDD.DLL driver with this one and set the following registry keys
 in `HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\HaspNt\Parameter`:
 
+```
 +--------------------+-----------+--------+
 | Key Name           | Type      | Value  |
 +--------------------+-----------+--------+
 | LegacyVDDInterface | REG_DWORD | 1      |
 +--------------------+-----------+--------+
+```
 
 When enabled, you can see the calls being sent and received from and to the
 dongle via [DebugView](https://docs.microsoft.com/en-us/sysinternals/downloads/debugview).
 If you want to record the calls and check them later, you can set the 
 following key to log them into a binary logfile:
 
+```
 +--------------------+-----------+-----------------------------------------+
 | Key Name           | Type      | Value                                   |
 +--------------------+-----------+-----------------------------------------+
 | LogFile            | REG_SZ    | Full path and name of a file to log to. |
 |                    |           | i.e. C:\Temp\hasplog.dmp                |
 +--------------------+-----------+-----------------------------------------+
+```
 
 The logged calls can then be later dumped in human readable form by the 
 [dumplog](dumplog/) utility. 
@@ -488,6 +493,7 @@ So you create a registry value `EmulateParams` with these 16 bytes under
 set `LegacyVDDInterface`to 2 and if will start emulating it. 
 To end emulation, delete the keys.
 
+```
 +--------------------+-----------+------------------------------------------+
 | Key Name           | Type      | Value                                    |
 +------------------- +-----------+------------------------------------------+
@@ -497,13 +503,14 @@ To end emulation, delete the keys.
 +--------------------+-----------+------------------------------------------+
 | LegacyVDDInterface | REG_DWORD | 2                                        |
 +--------------------+-----------+------------------------------------------+
-
+```
 
 #### Summary of registry settings 
 
 These have to go into the following Registry path:
 `HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\HaspNt\Parameter`
 
+```
 +--------------------+-----------+-------------------------------------------+
 | Key Name           | Type      | Description                               |
 +--------------------+-----------+-------------------------------------------+
@@ -528,6 +535,7 @@ These have to go into the following Registry path:
 |                    |           | exactly 16 bytes long (4 * 4)             |
 |                    |           | Only applies to LegacyVDDInterface = 2    |
 +--------------------+-----------+-------------------------------------------+
+```
 
 #### Build configurations notes 
 
