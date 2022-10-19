@@ -145,15 +145,15 @@ void LogMsg(BYTE Direction, PBYTE Data, SIZE_T Length)
  */
 void DbgDumpMsg(BYTE Direction, PBYTE Data, SIZE_T Length)
 {
-	char Msg[256], * p;
+	char Msg[2048], * p;
 	int i;
 	SIZE_T MaxLength = sizeof(Msg);
 
 	i = wsprintf(Msg, "HASP %s [%02X] ", m_pszWhat[Direction], Length);
 	MaxLength -= i;
 	p = Msg + i;
-	if (Length > MaxLength) Length = MaxLength;
-	for (i = 0; i < (int)Length; i++) p += wsprintf(p, "%02X ", Data[i]);
+	MaxLength = Length * 3 > MaxLength ? MaxLength / 3 : Length;
+	for (i = 0; i < (int)MaxLength; i++) p += wsprintf(p, "%02X ", Data[i]);
 	p += wsprintf(p, "\n");
 	OutputDebugString(Msg);
 	LogMsg(Direction, Data, Length);
