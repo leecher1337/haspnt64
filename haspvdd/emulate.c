@@ -9,31 +9,66 @@
  *
  */
 
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
+#include "haspvdd.h"
 #include "hasp.h"
-#include "haspintl.h"
-#include "haspio.h"
+#include "haspcrypt.h"
 #include "log.h"
 
-HaspDOSBufferStruc EmulatorCodeTemplate;
+BOOL EmulateCalls(HaspBufferInStruc* Buffer, ULONG Length, PDWORD ReadBytes);
+
+static HaspDOSBufferStruc EmulatorCodeTemplate;
 
 /* Initializes the emulator by loading its configuration
  *
  * Parameters:
- *  hKey - Registry key of the node containing the configuration settings
+ *  hKey            - Registry key of the node containing the configuration settings
+ *  pInterfaceMode  - Interface mode will be set to appropriate dispatcher function
+ *  pfnHaspIOCtl    - IO Control dispatcher function will be set accordingly
  *
  * Returns:
  *  TRUE  - Initialization succeeded
  *  FALSE - Failure to read configuration 
  */
-BOOL EmulatorInit(HKEY hKey)
+BOOL EmulatorInit(HKEY hKey, DWORD *pInterfaceMode, fnHaspIOCtl *pfnHaspIOCtl)
 {
 	DWORD cbData = 4 * sizeof(DWORD);
+	char szEmulator[MAX_PATH];
 
-	return RegQueryValueEx(hKey, "EmulateParams", NULL, NULL, 
+	// User just wants to emulate 02 call with predefined data
+	if (RegQueryValueEx(hKey, "EmulateParams", NULL, NULL,
 		(LPBYTE)&EmulatorCodeTemplate.Param1Ret, &cbData) == ERROR_SUCCESS &&
-		cbData == 4 * sizeof(DWORD);
+		cbData == 4 * sizeof(DWORD))
+	{
+		*pfnHaspIOCtl = EmulateCalls;
+		*pInterfaceMode = MODE_IOCTLIF;
+		return TRUE;
+	}
+
+	// User registered an emulator library
+	cbData = sizeof(szEmulator);
+	if (RegQueryValueEx(hKey, "EmulatorDLL", NULL, NULL, szEmulator, &cbData) == ERROR_SUCCESS)
+	{
+		HMODULE hDLL = LoadLibrary(szEmulator);
+		fnHaspIOCtl pfunc;
+
+		if (!hDLL)
+		{
+			LogLastError("Cannot load specified emulator DLL: ");
+			return FALSE;
+		}
+
+		if (!(pfunc = (fnHaspIOCtl)GetProcAddress(hDLL, "CallHardlock")))
+		{
+			LogLastError("Emulator DLL doesn't contain correct dispatcher function: ");
+			FreeLibrary(hDLL);
+			return FALSE;
+		}
+		*pfnHaspIOCtl = pfunc;
+		*pInterfaceMode = MODE_LEGACYIF;
+		return TRUE;
+	}
+
+	return FALSE;
 }
 
 /* Emulates a call to the HASP dongle, dispatches incoming calls.
@@ -42,16 +77,16 @@ BOOL EmulatorInit(HKEY hKey)
  * to the next driver.
  *
  * Parameters:
- *  Buffer    - [IN]  Decrypoted Buffer from caller to check
+ *  Buffer    - [IN]  Decrypted Buffer from caller to check
  *  Length    - [IN]  Length of Buffer 
- *  ReadBytes - [OUT] Numbre of bytes read 
+ *  ReadBytes - [OUT] Number of bytes read 
  *
  * Returns:
  *  TRUE      - Incoming packet has been processed successfully
  *  FALSE     - Packet could not be processed, onknown Service code
  *              Even on FALSE, return Buffer is being Re-encrypted
  */
-BOOL EmulateCalls(HaspBufferInStruc* Buffer, USHORT Length, PDWORD ReadBytes)
+BOOL EmulateCalls(HaspBufferInStruc* Buffer, ULONG Length, PDWORD ReadBytes)
 {
 	BOOL bRet = TRUE;
 	

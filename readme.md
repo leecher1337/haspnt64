@@ -13,9 +13,52 @@ also on 64bit Windows, but no driver is available from Safenet Inc.
 In order to remedy this issue, I created a driver and VDD component to allow
 interaction with the Dongle also on 64bit NTVDMx64.
 Unfortunately, due to technical reasons explained later, this has to be done
-in the form of a driver. 
+in the form of a driver, unless you just want to emulate a simple dongle.
 
-## Installation instructions
+## Installation instructions for userspace emulator
+
+### About the userspace emulator
+
+In case you use a very simple HASP dongle in your DOS application, you may
+already use a Dongle Emulator like HASPHL2007, Multikey or MkBus on your 
+32bit machine. If this is the case, you should also have a .reg file defining
+the dongle dump and it may be possible to emulate the dongle with 
+[UCLHASP](http://www.woodmann.com/crackz/Tools/Dongles/Uclhasp.zip) functions.
+For instructions for creating a .reg file from your existing dongle (or 
+from existing HASPHL2007 emulator), see [here](http://www.reteam.org/board/showthread.php?t=3136).
+In case the DOS application doesn't use the INT 6 (Invalid opcode) services
+for decryption of cypted code, it may be enough to use the Dongle usermode 
+emulation. The advantage of this approach is that you don't have to install a
+driver on your 64bit machine and save you the hassle with possible 
+instabilities of the original driver leading to sytem crashes and the driver 
+signing problems discussed in the "full driver" installation instructions.
+If it doesn't work, you can always try the full driver variant.
+
+### 1) Installing prerequesites
+
+1) You need the [NTVDMx64](https://github.com/leecher1337/ntvdmx64), of course
+2) You must have added your emulator dongle dump .reg file to registry.
+   Keys are searched in the following paths:
+   
+	HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Emulator\Hasp\Dump
+	HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\MultiKey\Dumps
+	HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Mkbus
+
+### 2) Installation 
+
+1) Download the uclhaspemu.zip from "Releases" and unpack it 
+   to a directory.
+2) Run install.cmd in there, that should install the VDD and the emulator
+   library
+
+## Installation instructions for full driver 
+
+### About the full driver
+
+The full driver tries to give NTVDM access to the real HASP driver running
+on your system, so this method is i.e. suitable for connecting a real physical
+key to your machine as well as using kernel mode emulators like i.e. MkBus,
+where 64bit drivers exist.
 
 ### About driver signing 
 
@@ -230,6 +273,8 @@ passed. For  the encryption and decryption scheme, either see the
 `Decrypt28` routine in [haspio.c](haspvdd/haspio.c) for a C implementation or
 the [HASPEMU.ASM](haspdos/HASPEMU.ASM) for an assembler implementation 
 (stolen from [UCLHASP]( http://www.woodmann.com/crackz/Tools/Dongles/Uclhasp.zip)).
+UCLHASP implementation had a bug of not initializing tmp_decrypt buffer 
+properly, this has been fixed here.
 If there is a buffer to be transferred from DOS memory to the driver, it 
 translates the DOS pointer to a memory address readable by the driver and then
 re-encrypts the buffer again (as DOS addresses cannot be directly mapped without
@@ -453,7 +498,10 @@ following key to log them into a binary logfile:
 The logged calls can then be later dumped in human readable form by the 
 [dumplog](dumplog/) utility. 
 
-#### The emulation interface
+#### The Call 02 emulation interface (obsolete, better use UCLHASP!)
+
+As UCLHASP emulation method offers more functionality, this method is not 
+recommended anymore and this chapter just stays here for reference purposes:
 
 As prevously mentioned, there may be applications where it is sufficient to 
 just return static values to the 02 request. See chapter about the HASPEMU.SYS
@@ -461,7 +509,7 @@ driver for details. This is basically the same facility, but you don't need
 a seperate HASPEMU.SYS driver, but can use the normal HASPDOS.SYS driver and
 just let the HASPVDD.DLL driver do the emulation.
 The reason that there are 2 ways to accomplish the same goal is that the
-HASPEMU.SYS driver may also works with other DOS emulations or even directly
+HASPEMU.SYS driver may also work with other DOS emulations or even directly
 in good old plain DOS, whereas the HASPDOS.SYS driver only works in conjunction
 with NTVDM. If you can emulate the dongle using this method, you don't need 
 the HASPNT64.SYS driver, as the function calls are directly answered by the 
@@ -505,6 +553,82 @@ To end emulation, delete the keys.
 +--------------------+-----------+------------------------------------------+
 ```
 
+#### The UCLHASP emulator interface
+
+As mentioned in the introduction, it's always desirable to do as much in 
+usermode as possible and not having to use kernel mode drivers saves you from 
+potential problems. Therefore it is preferrable to do a usermode dongle 
+emulation for dongles that just use simple functions and where the UCLHASP 
+emulator may be enough.
+
+For this reason, the HASPVDD driver supports the use of a "plugin" DLL
+that offers emulation functions. The driver just has to export the function 
+`CallHardlock` that simply gets called whenever there is a call from the DOS 
+driver and is expected to handle it accordingly. For a prototype definition,
+see [uclhasp.c](uclhasp/uclhasp.c).
+The emulator registers itself with HASPVDD by creating the registry value 
+`EmulatorDLL` with a path to the driver under 
+`HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\HaspNt\Parameter`,
+therefore to use uclhasp (given that uclhasp.dll is present in the 
+Windows\SysWOW64 directory), the following entry has to be made:
+
+```
++--------------------+-----------+------------------------------------------+
+| Key Name           | Type      | Value                                    |
++------------------- +-----------+------------------------------------------+
+| EmulatorDLL        | REG_SZ    | uclhasp.dll                              |
++--------------------+-----------+------------------------------------------+
+```
+
+To unregister the emulator, just remove the key again and then it will talk
+to the normal HASP driver again.
+
+The UCLHASP driver searches for dongle key definitions in the following
+registry paths:
+
+	HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\Emulator\Hasp\Dump
+	HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\MultiKey\Dumps
+	HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Mkbus
+
+The key format is like the one specified for these emulators, so it should
+work out of the box.
+
+Citing the UCLHASP documentation (as an example):
+
+All dumps are contained in the registry along the path
+`HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\Emulator\HASP\Dump\xxxxxxxx`
+where xxxxxxxx - key opening passwords (must be 8 digits!).
+
+DemoMA key registry example (3c39:25a0)
+
+```
+REGEDIT4
+
+[HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\Emulator\HASP\Dump\3c3925a0]
+"Name"="DemoMA dongle"
+"Internal Name"="[DemoMA]"
+"SN"=dword:DEADBEEF
+"pwd"=dword:3c3925a0
+"Type"=dword:01
+"Memory"=dword:01
+"Data"=hex:ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff, \
+  ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff, \
+  ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff, \
+  ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff, \
+  ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff,ff
+"Created"="12/12/1998 6:59 PM"
+"Copyright"="(c)1998 by MeteO //UCL dongle labs"
+"Expired"=dword:1dae282
+"CRC"=dword:00000000
+```
+Main fields used:
+
+```
+SN   - key serial number
+Pwd  - open key passwords
+Data - contents of the dongle memory
+```
+ 
 #### Summary of registry settings 
 
 These have to go into the following Registry path:
@@ -535,6 +659,11 @@ These have to go into the following Registry path:
 |                    |           | exactly 16 bytes long (4 * 4)             |
 |                    |           | Only applies to LegacyVDDInterface = 2    |
 +--------------------+-----------+-------------------------------------------+
+| EmulatorDLL        | REG_SZ    | DLL to register with driver to do dongle  |
+|                    |           | Emulation. Disables normal operation and  |
+|                    |           | dispatches every call to emulator DLL.    |
+|                    |           | Do NOT confuse with LegacyVDDInterface=2! |
++--------------------+-----------+-------------------------------------------+
 ```
 
 #### Build configurations notes 
@@ -561,6 +690,21 @@ x86 and maybe you want to use it due to stability issues that can be seen
 with the original driver), you have to take care of the different build 
 configurations for HASPVDD.DLL, if you want to use it in conjunction with 
 our own HASPVDD.DLL. But be aware, that we ONLY support DOS applications!
+
+Regarding the UCLHASP driver, it contains the ASM source in 
+[asm\src](uclhasp/asm/src). The source can only be compiled with TASM, not
+with MASM, therefore the .asm files cannot be directly linked with Visual
+Studio, which would use integrated MASM. So the object files are linked to the
+project instead. To generate the object files, use TASM. However TASM outputs
+OMF object format, not COFF and newer Microsoft linkers and even the editbin
+utility in more recent Visual Studio Versions (like VS2019) do not seem to 
+support OMF anymore, no idea, why that got removed. So in order to link the
+.obj files with newer VS versions, they first need to be converted to COFF 
+via Visual Studio 6 version of editbin which still supoprts OMF.
+The MAKE.BAT in asm-Directory does that for you. To make the project 
+compilable out of the box for you, the repository therefore contains .obj 
+files of UCLHASP.
+
 
 ### The HASPNT64 driver 
 

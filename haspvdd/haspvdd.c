@@ -5,12 +5,11 @@
  *  This module implements the main dispatcher for the VDD.
  *
  */
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
+#include "haspvdd.h"
 #include <winioctl.h>
 #include "hasp.h"
-#include "haspintl.h"
 #include "haspio.h"
+#include "haspcrypt.h"
 #include "hardlockdrv.h"
 #include "log.h"
 #include "emulate.h"
@@ -18,14 +17,8 @@
 #include <vddsvc.h>
 #pragma comment (lib, "ntvdm.lib")
 
-enum {
-	MODE_IOCTLIF  = 0,		// IOCTL interface to interface with our HASPNT64 driver (default)
-	MODE_LEGACYIF = 1,		// Legacy ReadFile() based interface used by the original driver
-	MODE_EMULATE  = 2		// Just "Emulate" call LOCALHASP_HASPCODE with fixed reply
-} EmulatorMode;
-
 static DWORD m_InterfaceMode = MODE_IOCTLIF;
-extern HaspDOSBufferStruc EmulatorCodeTemplate;
+static fnHaspIOCtl pHaspIOCtl = HaspIOCtl;
 
 /* DLL entry point, gets called on load and unload, initializes and cleans up
  * module internal structures
@@ -76,7 +69,8 @@ VDDRegisterInit(
 		cbData = sizeof(m_InterfaceMode);
 		RegQueryValueEx(hKey, "LegacyVDDInterface", NULL, NULL, (LPBYTE)&m_InterfaceMode, &cbData);
 
-		if (EmulatorInit(hKey)) m_InterfaceMode = MODE_EMULATE;
+		if (m_InterfaceMode == MODE_LEGACYIF) pHaspIOCtl = CallLegacyHardlock;
+		EmulatorInit(hKey, &m_InterfaceMode, &pHaspIOCtl);
 
 		RegCloseKey(hKey);
 	}
@@ -104,59 +98,53 @@ VDDDispatch()
 	Decrypt28((PUSHORT)IOBuffer, sizeof(HaspBufferInStruc));
 	DbgDumpMsg(0, (PBYTE)IOBuffer, sizeof(HaspBufferInStruc));
 
-	if (m_InterfaceMode == MODE_EMULATE)
+	IOBuffer->DOSBuffer.Service2 = 1;
+	switch (IOBuffer->DOSBuffer.Service)
 	{
-		Success = EmulateCalls(IOBuffer, sizeof(HaspBufferInStruc), & ReadBytes);
+	case MEMOHASP_READBLOCK:
+	case MEMOHASP_WRITEBLOCK:
+	case TIMEHASP_READBLOCK:
+	case TIMEHASP_WRITEBLOCK:
+	case LOCALHASP_ENCODEDATA:			// Original VDD: 0x37, but that code is invalid??
+	case LOCALHASP_DECODEDATA:			// Original VDD: 0x38, but that code is invalid??
+		IOBuffer->DOSBuffer.AX = (DWORD)GetVDMPointer(
+			IOBuffer->DOSBuffer.AX | (IOBuffer->DOSBuffer.ES << 16),
+			IOBuffer->DOSBuffer.SI,
+			HIBYTE(IOBuffer->DOSBuffer.Param1) == 1);
+		if (m_InterfaceMode == MODE_LEGACYIF)
+		{
+			LockedMemPtr = (PVOID)IOBuffer->DOSBuffer.AX;
+			LockedMemSize = IOBuffer->DOSBuffer.SI;
+			if (IOBuffer->DOSBuffer.Service != TIMEHASP_READBLOCK &&
+				IOBuffer->DOSBuffer.Service != TIMEHASP_WRITEBLOCK)
+				LockedMemSize *= 2;
+			DbgDumpMsg(2, LockedMemPtr, LockedMemSize);
+			if (!VirtualLock(LockedMemPtr, LockedMemSize))
+				LockedMemSize = 0;
+		}
+		break;
+	}
+
+	if (m_InterfaceMode == MODE_LEGACYIF)
+	{
+		HaspBufferInStruc Buf;
+
+		Encrypt28((PUSHORT)IOBuffer, sizeof(HaspBufferInStruc));
+		Buf = *IOBuffer;
+		Success = pHaspIOCtl(&Buf, sizeof(HaspBufferInStruc), &ReadBytes);
+		*IOBuffer = Buf;
+		Decrypt28((PUSHORT)&Buf, sizeof(HaspBufferInStruc));
+		if (LockedMemSize)
+		{
+			DbgDumpMsg(2, LockedMemPtr, LockedMemSize);
+			VirtualUnlock(LockedMemPtr, LockedMemSize);
+		}
+		DbgDumpMsg(1, (PBYTE)&Buf, sizeof(HaspBufferInStruc));
 	}
 	else
 	{
-		IOBuffer->DOSBuffer.Service2 = 1;
-		switch (IOBuffer->DOSBuffer.Service)
-		{
-		case MEMOHASP_READBLOCK:
-		case MEMOHASP_WRITEBLOCK:
-		case TIMEHASP_READBLOCK:
-		case TIMEHASP_WRITEBLOCK:
-		case LOCALHASP_ENCODEDATA:			// Original VDD: 0x37, but that code is invalid??
-		case LOCALHASP_DECODEDATA:			// Original VDD: 0x38, but that code is invalid??
-			IOBuffer->DOSBuffer.AX = (DWORD)GetVDMPointer(
-				IOBuffer->DOSBuffer.AX | (IOBuffer->DOSBuffer.ES << 16),
-				IOBuffer->DOSBuffer.SI,
-				HIBYTE(IOBuffer->DOSBuffer.Param1) == 1);
-			if (m_InterfaceMode == MODE_LEGACYIF)
-			{
-				LockedMemPtr = (PVOID)IOBuffer->DOSBuffer.AX;
-				LockedMemSize = IOBuffer->DOSBuffer.SI;
-				if (IOBuffer->DOSBuffer.Service != TIMEHASP_READBLOCK &&
-					IOBuffer->DOSBuffer.Service != TIMEHASP_WRITEBLOCK)
-					LockedMemSize *= 2;
-				DbgDumpMsg(2, LockedMemPtr, LockedMemSize);
-				if (!VirtualLock(LockedMemPtr, LockedMemSize))
-					LockedMemSize = 0;
-			}
-			break;
-		}
-
-		if (m_InterfaceMode == MODE_LEGACYIF)
-		{
-			HaspBufferInStruc Buf;
-
-			Encrypt28((PUSHORT)IOBuffer, sizeof(HaspBufferInStruc));
-			Buf = *IOBuffer;
-			Success = CallLegacyHardlock(&Buf, sizeof(HaspBufferInStruc), &ReadBytes);
-			*IOBuffer = Buf;
-			Decrypt28((PUSHORT)&Buf, sizeof(HaspBufferInStruc));
-			if (LockedMemSize)
-			{
-				DbgDumpMsg(2, LockedMemPtr, LockedMemSize);
-				VirtualUnlock(LockedMemPtr, LockedMemSize);
-			}
-			DbgDumpMsg(1, (PBYTE)&Buf, sizeof(HaspBufferInStruc));
-		}
-		else
-		{
-			Success = HaspIOCtl(IOBuffer, sizeof(HaspBufferInStruc), &ReadBytes);
-		}
+		Success = pHaspIOCtl(IOBuffer, sizeof(HaspBufferInStruc), &ReadBytes);
+		DbgDumpMsg(1, (PBYTE)IOBuffer, sizeof(HaspBufferInStruc));
 	}
 
 	if (Success)

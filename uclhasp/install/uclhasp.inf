@@ -1,0 +1,48 @@
+;
+; uclhasp.inf
+;
+
+[Version]
+Signature="$WINDOWS NT$"
+
+;-------------------------------------------------------------------------
+; Installation Section
+;-------------------------------------------------------------------------
+[DefaultInstall]
+ CopyFiles       = HaspNt.CopyFiles.Emu, HaspNt.CopyFiles.Vdd
+ AddReg          = HaspNt.AddReg.Emu
+
+[DefaultUninstall]
+ DelFiles        = HaspNt.CopyFiles.Emu, HaspNt.CopyFiles.Vdd
+ DelReg          = HaspNt.AddReg.Emu
+
+
+; ------------------------------------------------------------------------
+; File copy
+; ------------------------------------------------------------------------
+[DestinationDirs]
+DefaultDestDir = 16425  ; %windir%\SysWOW64
+
+[HaspNt.AddReg.Emu]
+HKLM,SYSTEM\CurrentControlSet\Services\Haspnt\Parameters,EmulatorDLL,,uclhasp.dll
+
+[HaspNt.CopyFiles.Emu]
+uclhasp.dll
+
+[HaspNt.CopyFiles.Vdd]
+haspdos.sys
+haspvdd.dll
+
+[SourceDisksNames]
+1 = %DiskName%,,,""
+
+[SourceDisksFiles]
+uclhasp.dll = 1
+haspdos.sys = 1
+haspvdd.dll = 1
+
+[Strings]
+ManufacturerName="leecher1337"
+ClassName=""
+DiskName="Uclhasp emulator for NTVDM Source Disk"
+HaspNt_Desc="Uclhasp emulator for NTVDM"

@@ -9,7 +9,7 @@
  *  driver (for emulation of the classic ReadFile interface).
  *
  */
-#ifdef _WINDOWS
+#if defined(_WINDOWS) || defined(_CONSOLE)
 /* Usermode */
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -31,55 +31,8 @@ EXTERN_C void _declspec(dllimport) WINAPI RtlZeroMemory(PVOID, SIZE_T);
 
 #include "hasp.h"
 #include "haspintl.h"
+#include "haspcrypt.h"
 #include "hardlockdrv.h"
-
-/* Decrypts the DOS 40 (x028) byte input buffer in-place
- *
- * Parameters:
- *  Buffer    - The buffer to decrypt 
- *  Length    - Length of the buffer, currently ignored, as alwawys 40 bytes
- */
-void Decrypt28(PUSHORT Buffer, int Length)
-{
-	USHORT register v2, v4, v6;
-	int i, j;
-
-	UNREFERENCED_PARAMETER(Length);
-	for (i = 0, v2 = 17; i < sizeof(HaspBufferInStruc) / sizeof(USHORT); i++)
-	{
-		for (j = 0, v6 = 0, v4 = Buffer[i]; j < 16; j++)
-		{
-			v6 |= (((BYTE)v4 ^ (BYTE)v2) & 1) << j;
-			v2 = (v2 >> 1) ^ ('IQ' * (v4 & 1));
-			v4 >>= 1;
-		}
-		Buffer[i] = v6;
-	}
-}
-
-/* Encrypts the DOS 40 (x028) byte input buffer in-place
- *
- * Parameters:
- *  Buffer    - The buffer to encrypt 
- *  Length    - Length of the buffer, currently ignored, as alwawys 40 bytes
- */
-void Encrypt28(PUSHORT Buffer, int Length)
-{
-	USHORT register v2, v4, v6;
-	int i, j;
-
-	UNREFERENCED_PARAMETER(Length);
-	for (i = 0, v2 = 17; i < sizeof(HaspBufferInStruc) / sizeof(USHORT); i++)
-	{
-		for (j = 0, v6 = 0, v4 = Buffer[i]; j < 16; j++)
-		{
-			v6 |= (((BYTE)v4 ^ (BYTE)v2) & 1) << j;
-			v2 = (v2 >> 1) ^ ('IQ' * (((BYTE)v4 ^ (BYTE)v2) & 1));
-			v4 >>= 1;
-		}
-		Buffer[i] = v6;
-	}
-}
 
 /* Converts a decrypted 40 (0x28) byte DOS HASP buffer to the internal format 
  * used by the downlevel HARDLOCK.SYS driver 
@@ -98,7 +51,7 @@ int Convert28ToHL(HaspWinBufferStruc* Destination, HaspBufferInStruc* Src, USHOR
 	if (!Src)
 		return 1;
 
-	RtlCopyMemory(&Destination->DOSBuffer, &Src->DOSBuffer, Length);
+	RtlMoveMemory(&Destination->DOSBuffer, &Src->DOSBuffer, Length);
 
 	Destination->Code1 = 1;
 	Destination->Code2 = 1;

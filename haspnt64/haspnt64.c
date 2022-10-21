@@ -11,6 +11,7 @@
 #include "hardlock.h"
 #include "haspintl.h"
 #include "haspio.h"
+#include "haspcrypt.h"
 #include "hardlockdrv.h"
 
 //----------------------------------------------------------------------

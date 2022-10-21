@@ -15,11 +15,44 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="dumplog.c">
+    <ClCompile Include="uclhasp.c">
       <Filter>Quelldateien</Filter>
     </ClCompile>
-    <ClCompile Include="..\haspvdd\haspcrypt.c">
+    <ClCompile Include="DEBUG.C">
       <Filter>Quelldateien</Filter>
     </ClCompile>
+    <ClCompile Include="REGISTRY.C">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Object Include="asm\DECRYPT.OBJ">
+      <Filter>Quelldateien</Filter>
+    </Object>
+    <Object Include="asm\FN-EMU.OBJ">
+      <Filter>Quelldateien</Filter>
+    </Object>
+    <Object Include="asm\HASPMEM.OBJ">
+      <Filter>Quelldateien</Filter>
+    </Object>
+    <Object Include="asm\INT06H.OBJ">
+      <Filter>Quelldateien</Filter>
+    </Object>
+    <Object Include="asm\OVERALL.OBJ">
+      <Filter>Quelldateien</Filter>
+    </Object>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="HASP.H">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="registry.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="uclhasp.def">
+      <Filter>Quelldateien</Filter>
+    </None>
   </ItemGroup>
 </Project>

@@ -30,6 +30,9 @@
     <ClCompile Include="emulate.c">
       <Filter>Quelldateien</Filter>
     </ClCompile>
+    <ClCompile Include="haspcrypt.c">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="hasp.h">
@@ -54,6 +57,12 @@
       <Filter>Headerdateien</Filter>
     </ClInclude>
     <ClInclude Include="emulate.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="haspvdd.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="haspcrypt.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
   </ItemGroup>

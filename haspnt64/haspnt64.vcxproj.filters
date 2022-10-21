@@ -33,5 +33,8 @@
     <ClCompile Include="..\haspvdd\haspio.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\haspvdd\haspcrypt.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

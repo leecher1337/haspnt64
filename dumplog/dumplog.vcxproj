@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\haspvdd\haspcrypt.c" />
     <ClCompile Include="dumplog.c" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

@@ -338,6 +338,7 @@ copy /Y $(Inf2CatSource)..\..\Release\haspvdd.dll $(Inf2CatSource)
     <FilesToPackage Include="$(TargetPath)" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\haspvdd\haspcrypt.c" />
     <ClCompile Include="..\haspvdd\haspio.c" />
     <ClCompile Include="hardlockdrv.c" />
     <ClCompile Include="haspnt64.c" />
