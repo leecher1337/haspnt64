@@ -18,7 +18,7 @@ CD /D "%~dp0"
 
 type %systemroot%\sysWOW64\config.nt | find /i "haspdos.sys"
 if not errorlevel 1 (
-  type %systemroot%\sysWOW64\config.nt | find /V >%TEMP%\config.nt
+  find /V "haspdos.sys" %systemroot%\sysWOW64\config.nt >%TEMP%\config.nt
   move /y %TEMP%\config.nt %systemroot%\sysWOW64\config.nt
 )
 rundll32 setupapi,InstallHinfSection DefaultUninstall 132 .\haspnt64.inf
