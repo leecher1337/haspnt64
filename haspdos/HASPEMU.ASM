@@ -104,6 +104,7 @@ LOCAL   Final_counter:word,counter:word,Cur_Word:word,tmp_decrypt:word,var_1:wor
         and     edi, 0ffffh
         mov     word ptr counter, 0
         mov     word ptr Final_counter, 28h
+        mov     word ptr tmp_decrypt, 11h
 @encr_init:
         mov     si, counter
         mov     ax, es:[esi+edi]
@@ -160,6 +161,7 @@ LOCAL   Final_counter:word,counter:word,Cur_Word:word,tmp_decrypt:word,var_1:wor
         and     edi, 0ffffh
         mov     counter, 0
         mov     Final_counter, 28h
+        mov     word ptr tmp_decrypt, 11h
 @decr_init:
         mov     si, counter
         mov     ax, es:[esi+edi]
