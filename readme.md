@@ -81,7 +81,11 @@ or whatever might happen in the future), try the "testsigned" installer.
 1) you need the [NTVDMx64](https://github.com/leecher1337/ntvdmx64), of 
    course.
 2) you need the the [64bit hardlock driver](https://supportportal.thalesgroup.com/csm?sys_kb_id=979a4e21db92e78cfe0aff3dbf9619c6&id=kb_article_view&sysparm_rank=1&sysparm_tsqueryId=7efc79bddb8e81105d310573f3961942&sysparm_article=KB0018319).
-   Download it and install it using the following command:
+   Unfortunately, in recent versions, the driver package doesn't include
+   the hardlock.sys driver anymore, so please download the 
+   [haspdinst.exe](../../releases/download/20221021/haspdinst.exe) from the 
+   releases-Page of this repository instead!
+   Install it using the following command:
    ```
        haspdinst -i -ld
    ```
