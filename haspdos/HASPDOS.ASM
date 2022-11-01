@@ -8,8 +8,8 @@
 ; driver does.
 ; 
 
-include "haspdrv.inc"
-include "isvbop.inc"
+include haspdrv.inc
+include isvbop.inc
 
 ;****************************************************************
 ;*      WORK SPACE FOR OUR DEVICE DRIVER                        *
@@ -106,6 +106,7 @@ INPUT   endp
 
 initial	proc	near	;display message on console
         ; We have nothing to say 
+        xor	ax, ax	    ;all good
         ret		    ;return to caller
 initial	endp
 

@@ -8,7 +8,7 @@
 ; Windows NTVDM
 ;
 
-include "haspdrv.inc"
+include haspdrv.inc
 
 ;****************************************************************
 ;*      WORK SPACE FOR OUR DEVICE DRIVER                        *
@@ -25,15 +25,12 @@ param_4     dd  0DDDDh
 ; Open (init) device
 ;
 OPEN    proc    near 
+CLOSE   proc    near 
         xor     ax, ax
+        retn
+CLOSE   endp
 OPEN    endp
 
-;ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
-; Close (uninit) device
-;
-CLOSE    proc    near 
-        xor     ax, ax
-CLOSE    endp
 
 ;ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
 ; Input (read) routine 
@@ -209,6 +206,8 @@ LOCAL   Final_counter:word,counter:word,Cur_Word:word,tmp_decrypt:word,var_1:wor
         ret
 DECRYPT28    endp
 
+include fakedosh.inc
+
 ;****************************************************************
 ;*      END OF PROGRAM                                          *
 ;****************************************************************
@@ -250,6 +249,7 @@ found_param1:
         add     di, 4
         xor     bx, bx                  ; Start with next value
         loop    found_param1            ; Parse next value, if left 
+        xor     ax, ax                  ; Success
         jmp     initial_done            ; All 4 params parsed, done 
 not_blank:
         mov     ah, al                  ; Store current char for comparison
@@ -257,6 +257,7 @@ not_blank:
         jne     not_cr
         loop    not_enough_param        ; If params left, bail out 
         mov     es:[di], ebx
+        xor     ax, ax                  ; Success
         jmp     initial_done            ; All 4 params parsed, done 
 not_cr:
         cmp     al, 'a'                 ; If hex, convert to uppercase
@@ -288,11 +289,15 @@ disp_str:
         pop     ds
         mov     ah, 9
         int     21h
+        mov     ax, 8003h               ; Error initializing
         ret
 initial_done:
+        call    fakedos
         pop     ds
         ret
 initial endp
+
+include fakedosf.inc
 
 msg1    db   'HASP emulation DOS driver, (c) leecher@dose.0wnz.at 2022',0dh,0ah,'$'
 msg2    db   'We need 4 parameters in hex to emulate call reply',0dh,0ah,'$'

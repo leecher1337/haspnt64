@@ -34,7 +34,17 @@ instabilities of the original driver leading to sytem crashes and the driver
 signing problems discussed in the "full driver" installation instructions.
 If it doesn't work, you can always try the full driver variant.
 
-### 1) Installing prerequesites
+### Userspace UCLHASP emulator for NTVDM 
+
+If you are using classic NTVDM or NTVDMx64, using the emulator as VDD like 
+described here is your best bet, because it will take the fewest amount of DOS 
+memory and handles every HASP call directly in 32bit land. You are using the 
+unmodified UCLHASP emulator for best stability.
+If you are planning to use the dongle with DOS emulators or even under plain 
+MS-DOS on a real DOS-Machine, look down for the plain DOS UCLHASP emulator
+instead.
+
+#### 1) Installing prerequesites
 
 1) You need the [NTVDMx64](https://github.com/leecher1337/ntvdmx64), of course
 2) You must have added your emulator dongle dump .reg file to registry.
@@ -44,12 +54,80 @@ If it doesn't work, you can always try the full driver variant.
 	HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\MultiKey\Dumps
 	HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Mkbus
 
-### 2) Installation 
+#### 2) Installation 
 
 1) Download the uclhaspemu.zip from "Releases" and unpack it 
    to a directory.
 2) Run install.cmd in there, that should install the VDD and the emulator
    library
+
+### Plain DOS UCLHASP emulator 
+
+Instead of using NTVDM or NTVDMx64, you may want to use the UCLHASP emulator
+as a plain DOS device driver, thus enabling you to also use it on a bare-metal 
+MS-DOS installation or in an emulator like [DOSBOX-X](https://dosbox-x.com/).
+I ported UCLHASP code to a plain MS-DOS device driver for that. This should 
+be compatible with most MS-DOS emulations (including NTVDM).
+
+#### 1) Installing prerequesites
+
+1) Ensure that you have a fully-working DOS emulator with support for device 
+   drivers reading full chunks of memory or a working plain MS-DOS.
+   For DOSBox-X this was first implemented with pull request [3347](https://github.com/joncampbell123/dosbox-x/pull/3347),
+   but was later broken with [3676](https://github.com/joncampbell123/dosbox-x/pull/3678)
+   again, being fixed again in [3776](https://github.com/joncampbell123/dosbox-x/pull/3776),
+   effectively meaning at the time of writing, only the [August 01/2022 release](https://github.com/joncampbell123/dosbox-x/releases/tag/dosbox-x-windows-v2022.08.0)
+   is working, but Semptember 2022 release is broken.
+   It is exepcted that the fix will be deployed in releases after October 2022,
+   but at the time of writing, there was no release available yet.
+   
+2) The UCLHAPS.SYS driver takes an unencrypted Unidump-File as parameter,
+   you need the file you created using h5dmp that you fed to UniDump2Reg to
+   create a .reg file. This will contain the plain binary dongle dump that
+   will be read by the driver.
+   For a way to convert HASPHL2007 dongle dump to Unidump file, see link in
+   chapter introduction. A common file size of such a dump file is 719 bytes
+   for a MemoHASP.
+   
+NB: The HASP client code only talks to the driver if it thinks that it is 
+running on NTVDM. This means that "real" DOS Version needs to be reported as
+version number 5.50. The UCLHASP.SYS driver therefore modifies 
+[Function 3306h of INT 21h](http://www.ctyme.com/intr/rb-2730.htm) to pretend
+being DOS 5.50. It has an extra measure to guess that it is asked by the 
+HASP driver about the DOS-version but nevertheless, under some circumstances
+it could mean that your target application also thinks that it is running on 
+NTVDM and possibly change its behaviour accordingly. Although the likelyhood
+is not very high, be aware that this could be a potential problem for 
+malfunction of your application.
+
+#### 2) Installation
+
+1) Download UCLHASP.SYS file from "Releases" and dump it to your DOS machine
+   to a location where you can later load it.
+   
+2) Dump your Unidump file (let's name it HASP.DMP in this example) to some 
+   directory of you DOS-machine, so that you can pass its path and name as 
+   a parameter when loading the UCLHASP.SYS driver.
+   
+3) Make your DOS or DOS emulation load the UCLHASP.SYS on CONFIG.SYS with 
+   DEVICE= command. Under plain DOS, this line has to go into CONFIG.SYS,
+   under NTVDM into CONFIG.NT and under DosBox-X into the section named 
+   `[config]` in dosbox-x.conf.
+   Of course you have to specify correct paths in 8.3 format, if your 
+   drivers aren't just in the root directory of your DOS System-driver 
+   which this example assumes. As mentioned above, Unidump file's name is 
+   assumed as HASP.DMP:
+   
+```
+   DEVICE=UCLHASP.SYS HASP.DMP
+```
+
+   The DEVICE= statement should be at the bottom of your file/section so that 
+   the chance for interfering with DOS Version-checks for other drivers that 
+   may get loaded isn't high.
+   
+   If you prefer, you could also load it with DEVLOAD.COM at runtime instead
+   
 
 ## Installation instructions for full driver 
 
@@ -349,11 +427,13 @@ options you have on the path.
 ### The HASPDOS.SYS DOS device driver 
 
 This one is mandatory so that your DOS application has a connection point 
-to the upper level drivers. The driver comes in 2 flavours:
+to the upper level drivers. The driver comes in 3 flavours:
 
 1) The reimplemented HASPDOS.SYS driver that communicates with HASPVDD.DLL
 2) A HASPEMU.SYS emulation driver that just does a "replay" on packets of 
    Calltype #2 (`HASPCODE`) for very dumb applications.
+3) A UCLHASP.SYS driver that emulates a MemoHasp in plain DOS given a 
+   UniDump file.
    
 #### HASPDOS.SYS driver 
 The driver isn't really needed to be built yourself, just take the original 
@@ -365,7 +445,11 @@ uses the well-known BOPping mechanism to call the VDD
 (see [isvbop.inc](haspdos/isvbop.inc)).
 
 
-#### HASPEMU.SYS driver 
+#### HASPEMU.SYS driver (obsolete, better use UCLHASP!)
+
+As UCLHASP emulation method offers more functionality, this method is not 
+recommended anymore and this chapter just stays here for reference purposes:
+
 I also wrote a simple Dongle emulator for Call #2 (`HASPCODE`). 
 This is for pretty stupid applications that just check the presence of the 
 dongle by always using the same seed and the same passwords and just compare 
@@ -445,8 +529,40 @@ it afterwards and only on demand instead of everytime in config.nt at start:
     devload haspemu.sys 1234 5678 9abc def0
 ```
 
-This way, you can also use the driver with other DOS emulators as long as they
-are compliant with the DOS driver specifications.
+#### UCLHASP.SYS driver
+
+This is a port of the UCLHASP driver from 32bit Windows to MS-DOS. As the 
+UCLHASP driver was implemtend in 32bit assembly, it was eligible for porting
+to plain DOS. However, a few modifications needed to be made and a loader 
+code had to be written in order to read a Unidump file with the data to 
+present to the calling application, as naturally there is not Registry on
+MS-DOS from where to load the dump data. Thus, there is a seperate uclhasp 
+subdirectory under haspdos that contains the modified code (whereas the 
+original code (with decoding bugfix, but rest is original) resides 
+in uclhasp\asm\src directory).
+
+As mentioned above, the driver has to fake the MS-DOS version number returned
+so that the NTVDM-code of the HASP interface can kick in (which is done via
+INT 21h hook that it places on load). Code to do this is provided in the 
+FAKEDOS?.INC files whereas H is header part (resident part) and F is footer
+part (only used upon load and thus can be discarded).
+
+During testing on real DOS, it was noticed that there was always a machine 
+lockup upon opening the driver with its devicename HASPDOSDRV. 
+This is due to a misconception of the driver written by the HASP authors 
+that goes unpunished on Windows NT, but will lock up plain MS-DOS:
+For some unknown reason, they thought that the driver name can be 10 chars, 
+whereas only 8 characters for a device name are valid in the device driver 
+header. This doesn't seem to be an issue in NTVDM DOS, but on plain DOS 6.22, 
+DOS just locks up when using a device name with over 8 chars on OPEN call 
+(see MS-DOS Kernel dir2.asm routine ChkDev).
+Therefore the INT 21h hook is also checking this and shortening the device 
+name to 8 chars in case it gets "HASPDOSDRV" string in 
+[Function 3Dh of INT 21h (file open)](http://www.ctyme.com/intr/rb-2779.htm).
+The driver's code is also split in header (UCLHASPH.ASM) and footer 
+(UCLHASPF.ASM) distinguishing resident and the loader code to save memory.
+The driver has been tested on DosBox-X and NTVDMx64 and plain DOS 6.22.
+
 
 ### The HASPVDD.DLL driver
 
