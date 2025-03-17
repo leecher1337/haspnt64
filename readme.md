@@ -25,7 +25,7 @@ already use a Dongle Emulator like HASPHL2007, Multikey or MkBus on your
 the dongle dump and it may be possible to emulate the dongle with 
 [UCLHASP](http://www.woodmann.com/crackz/Tools/Dongles/Uclhasp.zip) functions.
 For instructions for creating a .reg file from your existing dongle (or 
-from existing HASPHL2007 emulator), see [here](http://www.reteam.org/board/showthread.php?t=3136).
+from existing HASPHL2007 emulator), see [here](https://web.archive.org/web/20220618001325/http://www.reteam.org/board/showthread.php?t=3136).
 In case the DOS application doesn't use the INT 6 (Invalid opcode) services
 for decryption of cypted code, it may be enough to use the Dongle usermode 
 emulation. The advantage of this approach is that you don't have to install a
